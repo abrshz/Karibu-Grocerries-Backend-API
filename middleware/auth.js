@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
-const User = require('../modules/user.model');
+const User = require('../models/User');
 
-// Verify JWT token
+// Protect routes - verify JWT
 const protect = async (req, res, next) => {
   let token;
 
@@ -10,7 +10,10 @@ const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ success: false, message: 'Not authorized. No token provided.' });
+    return res.status(401).json({
+      success: false,
+      message: 'Access denied. No token provided. Please log in.',
+    });
   }
 
   try {
@@ -18,12 +21,18 @@ const protect = async (req, res, next) => {
     req.user = await User.findById(decoded.id);
 
     if (!req.user || !req.user.isActive) {
-      return res.status(401).json({ success: false, message: 'User no longer exists or is inactive.' });
+      return res.status(401).json({
+        success: false,
+        message: 'User no longer exists or is inactive.',
+      });
     }
 
     next();
   } catch (error) {
-    return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token. Please log in again.',
+    });
   }
 };
 
@@ -33,7 +42,7 @@ const restrictTo = (...roles) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Access denied. Only ${roles.join(', ')} can perform this action.`,
+        message: `Access denied. This action requires one of these roles: ${roles.join(', ')}. Your role: ${req.user.role}`,
       });
     }
     next();

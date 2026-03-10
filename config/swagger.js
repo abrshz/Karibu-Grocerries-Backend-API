@@ -14,13 +14,15 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:{port}',
+        url: process.env.API_BASE_URL || 'http://localhost:{port}',
         variables: {
           port: {
             default: '3000',
           },
         },
-        description: 'Development server',
+        description: process.env.API_BASE_URL
+          ? 'Deployment server'
+          : 'Development server',
       },
     ],
     components: {

@@ -12,7 +12,7 @@ const procurementRoutes = require("./routes/procurementRoutes");
 const salesRoutes = require("./routes/salesRoutes");
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB
 connectDB();

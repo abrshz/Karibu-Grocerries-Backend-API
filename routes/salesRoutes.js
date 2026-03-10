@@ -1,8 +1,12 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { CashSale, CreditSale } = require('../models/Sale');
-const { protect, restrictTo } = require('../middleware/auth');
-const { cashSaleValidators, creditSaleValidators, validate } = require('../utils/validators');
+const { CashSale, CreditSale } = require("../models/Sale");
+const { protect, restrictTo } = require("../middleware/auth");
+const {
+  cashSaleValidators,
+  creditSaleValidators,
+  validate,
+} = require("../utils/validators");
 
 /**
  * @swagger
@@ -39,23 +43,26 @@ const { cashSaleValidators, creditSaleValidators, validate } = require('../utils
  *         description: SalesAgent role required
  */
 router.post(
-  '/cash',
+  "/cash",
   protect,
-  restrictTo('SalesAgent'),
-  cashSaleValidators,
+  restrictTo("SalesAgent"),
+  ...cashSaleValidators,
   validate,
   async (req, res) => {
     try {
-      const sale = await CashSale.create({ ...req.body, recordedBy: req.user._id });
+      const sale = await CashSale.create({
+        ...req.body,
+        recordedBy: req.user._id,
+      });
       res.status(201).json({
         success: true,
-        message: 'Cash sale recorded successfully',
+        message: "Cash sale recorded successfully",
         data: sale,
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
-  }
+  },
 );
 
 /**
@@ -83,7 +90,7 @@ router.post(
  *       401:
  *         description: Not authenticated
  */
-router.get('/cash', protect, async (req, res) => {
+router.get("/cash", protect, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -91,7 +98,7 @@ router.get('/cash', protect, async (req, res) => {
 
     const [sales, total] = await Promise.all([
       CashSale.find()
-        .populate('recordedBy', 'username role')
+        .populate("recordedBy", "username role")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -133,10 +140,16 @@ router.get('/cash', protect, async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/cash/:id', protect, async (req, res) => {
+router.get("/cash/:id", protect, async (req, res) => {
   try {
-    const sale = await CashSale.findById(req.params.id).populate('recordedBy', 'username role');
-    if (!sale) return res.status(404).json({ success: false, message: 'Cash sale not found' });
+    const sale = await CashSale.findById(req.params.id).populate(
+      "recordedBy",
+      "username role",
+    );
+    if (!sale)
+      return res
+        .status(404)
+        .json({ success: false, message: "Cash sale not found" });
     res.status(200).json({ success: true, data: sale });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -173,18 +186,30 @@ router.get('/cash/:id', protect, async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.put('/cash/:id', protect, restrictTo('SalesAgent'), cashSaleValidators, validate, async (req, res) => {
-  try {
-    const sale = await CashSale.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!sale) return res.status(404).json({ success: false, message: 'Cash sale not found' });
-    res.status(200).json({ success: true, message: 'Cash sale updated', data: sale });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.put(
+  "/cash/:id",
+  protect,
+  restrictTo("SalesAgent"),
+  ...cashSaleValidators,
+  validate,
+  async (req, res) => {
+    try {
+      const sale = await CashSale.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true,
+      });
+      if (!sale)
+        return res
+          .status(404)
+          .json({ success: false, message: "Cash sale not found" });
+      res
+        .status(200)
+        .json({ success: true, message: "Cash sale updated", data: sale });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+);
 
 /**
  * @swagger
@@ -210,15 +235,23 @@ router.put('/cash/:id', protect, restrictTo('SalesAgent'), cashSaleValidators, v
  *       404:
  *         description: Not found
  */
-router.delete('/cash/:id', protect, restrictTo('Manager'), async (req, res) => {
-  try {
-    const sale = await CashSale.findByIdAndDelete(req.params.id);
-    if (!sale) return res.status(404).json({ success: false, message: 'Cash sale not found' });
-    res.status(200).json({ success: true, message: 'Cash sale deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.delete(
+  "/cash/:id",
+  protect,
+  restrictTo("Manager", "Director"),
+  async (req, res) => {
+    try {
+      const sale = await CashSale.findByIdAndDelete(req.params.id);
+      if (!sale)
+        return res
+          .status(404)
+          .json({ success: false, message: "Cash sale not found" });
+      res.status(200).json({ success: true, message: "Cash sale deleted" });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+);
 
 // ─── CREDIT / DEFERRED SALES ─────────────────────────────────────────────────
 
@@ -248,23 +281,26 @@ router.delete('/cash/:id', protect, restrictTo('Manager'), async (req, res) => {
  *         description: SalesAgent role required
  */
 router.post(
-  '/credit',
+  "/credit",
   protect,
-  restrictTo('SalesAgent'),
-  creditSaleValidators,
+  restrictTo("SalesAgent"),
+  ...creditSaleValidators,
   validate,
   async (req, res) => {
     try {
-      const sale = await CreditSale.create({ ...req.body, recordedBy: req.user._id });
+      const sale = await CreditSale.create({
+        ...req.body,
+        recordedBy: req.user._id,
+      });
       res.status(201).json({
         success: true,
-        message: 'Credit/deferred sale recorded successfully',
+        message: "Credit/deferred sale recorded successfully",
         data: sale,
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
-  }
+  },
 );
 
 /**
@@ -297,10 +333,11 @@ router.post(
  *       401:
  *         description: Not authenticated
  */
-router.get('/credit', protect, async (req, res) => {
+router.get("/credit", protect, async (req, res) => {
   try {
     const filter = {};
-    if (req.query.isPaid !== undefined) filter.isPaid = req.query.isPaid === 'true';
+    if (req.query.isPaid !== undefined)
+      filter.isPaid = req.query.isPaid === "true";
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -308,7 +345,7 @@ router.get('/credit', protect, async (req, res) => {
 
     const [sales, total] = await Promise.all([
       CreditSale.find(filter)
-        .populate('recordedBy', 'username role')
+        .populate("recordedBy", "username role")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -350,10 +387,16 @@ router.get('/credit', protect, async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/credit/:id', protect, async (req, res) => {
+router.get("/credit/:id", protect, async (req, res) => {
   try {
-    const sale = await CreditSale.findById(req.params.id).populate('recordedBy', 'username role');
-    if (!sale) return res.status(404).json({ success: false, message: 'Credit sale not found' });
+    const sale = await CreditSale.findById(req.params.id).populate(
+      "recordedBy",
+      "username role",
+    );
+    if (!sale)
+      return res
+        .status(404)
+        .json({ success: false, message: "Credit sale not found" });
     res.status(200).json({ success: true, data: sale });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -390,18 +433,30 @@ router.get('/credit/:id', protect, async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.put('/credit/:id', protect, restrictTo('SalesAgent'), creditSaleValidators, validate, async (req, res) => {
-  try {
-    const sale = await CreditSale.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!sale) return res.status(404).json({ success: false, message: 'Credit sale not found' });
-    res.status(200).json({ success: true, message: 'Credit sale updated', data: sale });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.put(
+  "/credit/:id",
+  protect,
+  restrictTo("SalesAgent"),
+  ...creditSaleValidators,
+  validate,
+  async (req, res) => {
+    try {
+      const sale = await CreditSale.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true,
+      });
+      if (!sale)
+        return res
+          .status(404)
+          .json({ success: false, message: "Credit sale not found" });
+      res
+        .status(200)
+        .json({ success: true, message: "Credit sale updated", data: sale });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+);
 
 /**
  * @swagger
@@ -427,19 +482,31 @@ router.put('/credit/:id', protect, restrictTo('SalesAgent'), creditSaleValidator
  *       404:
  *         description: Not found
  */
-router.patch('/credit/:id/mark-paid', protect, restrictTo('Manager'), async (req, res) => {
-  try {
-    const sale = await CreditSale.findByIdAndUpdate(
-      req.params.id,
-      { isPaid: true },
-      { new: true }
-    );
-    if (!sale) return res.status(404).json({ success: false, message: 'Credit sale not found' });
-    res.status(200).json({ success: true, message: 'Credit sale marked as paid', data: sale });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.patch(
+  "/credit/:id/mark-paid",
+  protect,
+  restrictTo("Manager"),
+  async (req, res) => {
+    try {
+      const sale = await CreditSale.findByIdAndUpdate(
+        req.params.id,
+        { isPaid: true },
+        { new: true },
+      );
+      if (!sale)
+        return res
+          .status(404)
+          .json({ success: false, message: "Credit sale not found" });
+      res.status(200).json({
+        success: true,
+        message: "Credit sale marked as paid",
+        data: sale,
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+);
 
 /**
  * @swagger
@@ -465,14 +532,22 @@ router.patch('/credit/:id/mark-paid', protect, restrictTo('Manager'), async (req
  *       404:
  *         description: Not found
  */
-router.delete('/credit/:id', protect, restrictTo('Manager'), async (req, res) => {
-  try {
-    const sale = await CreditSale.findByIdAndDelete(req.params.id);
-    if (!sale) return res.status(404).json({ success: false, message: 'Credit sale not found' });
-    res.status(200).json({ success: true, message: 'Credit sale deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.delete(
+  "/credit/:id",
+  protect,
+  restrictTo("Manager"),
+  async (req, res) => {
+    try {
+      const sale = await CreditSale.findByIdAndDelete(req.params.id);
+      if (!sale)
+        return res
+          .status(404)
+          .json({ success: false, message: "Credit sale not found" });
+      res.status(200).json({ success: true, message: "Credit sale deleted" });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+);
 
 module.exports = router;

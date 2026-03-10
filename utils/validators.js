@@ -175,7 +175,7 @@ const userValidators = [
 
   body('role')
     .notEmpty().withMessage('Role is required')
-    .isIn(['Manager', 'SalesAgent']).withMessage('Role must be Manager or SalesAgent'),
+    .isIn(['Manager', 'SalesAgent', 'Director']).withMessage('Role must be one of: Manager, SalesAgent, or Director'),
 ];
 
 module.exports = {

@@ -1,8 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Procurement = require('../models/Procurement');
-const { protect, restrictTo } = require('../middleware/auth');
-const { procurementValidators, validate } = require('../utils/validators');
+const Procurement = require("../models/Procurement");
+const { protect, restrictTo } = require("../middleware/auth");
+const { procurementValidators, validate } = require("../utils/validators");
 
 /**
  * @swagger
@@ -48,10 +48,10 @@ const { procurementValidators, validate } = require('../utils/validators');
  *         description: Forbidden - Manager role required
  */
 router.post(
-  '/',
+  "/",
   protect,
-  restrictTo('Manager'),
-  procurementValidators,
+  restrictTo("Manager" , "Director"),
+  ...procurementValidators,
   validate,
   async (req, res) => {
     try {
@@ -60,13 +60,13 @@ router.post(
 
       res.status(201).json({
         success: true,
-        message: 'Procurement recorded successfully',
+        message: "Procurement recorded successfully",
         data: procurement,
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
-  }
+  },
 );
 
 /**
@@ -102,7 +102,7 @@ router.post(
  *       401:
  *         description: Not authenticated
  */
-router.get('/', protect, async (req, res) => {
+router.get("/", protect, async (req, res) => {
   try {
     const filter = {};
     if (req.query.branch) filter.branch = req.query.branch;
@@ -113,7 +113,7 @@ router.get('/', protect, async (req, res) => {
 
     const [procurements, total] = await Promise.all([
       Procurement.find(filter)
-        .populate('recordedBy', 'username role')
+        .populate("recordedBy", "username role")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -156,14 +156,16 @@ router.get('/', protect, async (req, res) => {
  *       404:
  *         description: Record not found
  */
-router.get('/:id', protect, async (req, res) => {
+router.get("/:id", protect, async (req, res) => {
   try {
     const procurement = await Procurement.findById(req.params.id).populate(
-      'recordedBy',
-      'username role'
+      "recordedBy",
+      "username role",
     );
     if (!procurement) {
-      return res.status(404).json({ success: false, message: 'Procurement record not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Procurement record not found" });
     }
     res.status(200).json({ success: true, data: procurement });
   } catch (error) {
@@ -201,21 +203,36 @@ router.get('/:id', protect, async (req, res) => {
  *       404:
  *         description: Record not found
  */
-router.put('/:id', protect, restrictTo('Manager'), procurementValidators, validate, async (req, res) => {
-  try {
-    const procurement = await Procurement.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    if (!procurement) {
-      return res.status(404).json({ success: false, message: 'Procurement record not found' });
+router.put(
+  "/:id",
+  protect,
+  restrictTo("Manager" ,"Director"),
+  ...procurementValidators,
+  validate,
+  async (req, res) => {
+    try {
+      const procurement = await Procurement.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true, runValidators: true },
+      );
+      if (!procurement) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Procurement record not found" });
+      }
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: "Procurement updated",
+          data: procurement,
+        });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
-    res.status(200).json({ success: true, message: 'Procurement updated', data: procurement });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+  },
+);
 
 /**
  * @swagger
@@ -241,13 +258,20 @@ router.put('/:id', protect, restrictTo('Manager'), procurementValidators, valida
  *       404:
  *         description: Record not found
  */
-router.delete('/:id', protect, restrictTo('Manager'), async (req, res) => {
+router.delete("/:id", protect, restrictTo("Manager" , "Director"), async (req, res) => {
   try {
     const procurement = await Procurement.findByIdAndDelete(req.params.id);
     if (!procurement) {
-      return res.status(404).json({ success: false, message: 'Procurement record not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Procurement record not found" });
     }
-    res.status(200).json({ success: true, message: 'Procurement record deleted successfully' });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Procurement record deleted successfully",
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -1,16 +1,15 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { protect, restrictTo } = require('../middleware/auth');
-const { userValidators, validate } = require('../utils/validators');
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const { protect, restrictTo } = require("../middleware/auth");
+const { userValidators, validate } = require("../utils/validators");
 
 // Generate JWT
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
-
 /**
  * @swagger
  * tags:
@@ -50,25 +49,25 @@ const signToken = (id) =>
  *       401:
  *         description: Invalid credentials - user does not exist or password is wrong
  */
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email and password',
+        message: "Please provide email and password",
       });
     }
 
     // Find user and include password field
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select("+password");
 
     // Status 401 if user does not exist
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials. User does not exist.',
+        message: "Invalid credentials. User does not exist.",
       });
     }
 
@@ -77,14 +76,14 @@ router.post('/login', async (req, res) => {
     if (!isPasswordCorrect) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials. Incorrect password.',
+        message: "Invalid credentials. Incorrect password.",
       });
     }
 
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Account is deactivated. Contact an administrator.',
+        message: "Account is deactivated. Contact an administrator.",
       });
     }
 
@@ -93,7 +92,7 @@ router.post('/login', async (req, res) => {
     // Status 200 if user exists and credentials are valid
     res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       token,
       user: {
         id: user._id,
@@ -133,34 +132,44 @@ router.post('/login', async (req, res) => {
  *       409:
  *         description: User already exists
  */
-router.post('/register', protect, restrictTo('Manager'), userValidators, validate, async (req, res) => {
-  try {
-    const { username, email, password, role } = req.body;
+router.post(
+  "/register",
+  protect,
+  restrictTo("Director"),
+  ...userValidators,
+  validate,
+  async (req, res) => {
+    try {
+      const { username, email, password, role , branch } = req.body;
 
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: 'A user with that email or username already exists.',
+      const existingUser = await User.findOne({
+        $or: [{ email }, { username }],
       });
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "A user with that email or username already exists.",
+        });
+      }
+
+      const newUser = await User.create({ username, email, password, role , branch });
+
+      res.status(201).json({
+        success: true,
+        message: "User registered successfully",
+        user: {
+          id: newUser._id,
+          username: newUser.username,
+          email: newUser.email,
+          role: newUser.role,
+          branch: newUser.branch,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
-
-    const newUser = await User.create({ username, email, password, role });
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        role: newUser.role,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+  },
+);
 
 /**
  * @swagger
@@ -178,9 +187,9 @@ router.post('/register', protect, restrictTo('Manager'), userValidators, validat
  *       403:
  *         description: Not authorized
  */
-router.get('/', protect, restrictTo('Manager'), async (req, res) => {
+router.get("/", protect, restrictTo("Manager"), async (req, res) => {
   try {
-    const users = await User.find().select('-password');
+    const users = await User.find().select("-password");
     res.status(200).json({
       success: true,
       count: users.length,
@@ -216,11 +225,13 @@ router.get('/', protect, restrictTo('Manager'), async (req, res) => {
  *       404:
  *         description: User not found
  */
-router.get('/:id', protect, restrictTo('Manager'), async (req, res) => {
+router.get("/:id", protect, restrictTo("Manager"), async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id).select("-password");
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
     res.status(200).json({ success: true, data: user });
   } catch (error) {
@@ -263,9 +274,9 @@ router.get('/:id', protect, restrictTo('Manager'), async (req, res) => {
  *       404:
  *         description: User not found
  */
-router.patch('/:id', protect, restrictTo('Manager'), async (req, res) => {
+router.patch("/:id", protect, restrictTo("Manager"), async (req, res) => {
   try {
-    const allowedUpdates = ['role', 'isActive'];
+    const allowedUpdates = ["role", "isActive"];
     const updates = {};
     allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -274,13 +285,19 @@ router.patch('/:id', protect, restrictTo('Manager'), async (req, res) => {
     const user = await User.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
-    }).select('-password');
+    }).select("-password");
 
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    res.status(200).json({ success: true, message: 'User updated successfully', data: user });
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: user,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -310,18 +327,20 @@ router.patch('/:id', protect, restrictTo('Manager'), async (req, res) => {
  *       404:
  *         description: User not found
  */
-router.delete('/:id', protect, restrictTo('Manager'), async (req, res) => {
+router.delete("/:id", protect, restrictTo("Manager"), async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
-    res.status(200).json({ success: true, message: 'User deleted successfully' });
+    res
+      .status(200)
+      .json({ success: true, message: "User deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
 module.exports = router;
-
-

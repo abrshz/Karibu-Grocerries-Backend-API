@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Username is required'],
       unique: true,
       trim: true,
-      minlength: [2, 'Username must be at least 2 characters'],
     },
     email: {
       type: String,
@@ -16,35 +15,41 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
     },
     password: {
       type: String,
       required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters'],
-      select: false,
+      minlength: 6,
+      select: false, // Do not send password in query results by default
     },
     role: {
       type: String,
-      enum: ['Manager', 'SalesAgent'],
-      required: [true, 'Role is required'],
+      enum: ['SalesAgent', 'Manager', 'Director'],
+      default: 'SalesAgent',
+    },
+    branch: {
+      type: String,
+      enum: ['Matugga', 'Maganjo'],
     },
     isActive: {
       type: Boolean,
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-// Hash password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+// Correct pre-save hook for password hashing
+userSchema.pre('save', async function () {
+  // Only run this function if password was actually modified
+  if (!this.isModified('password')) return;
+
+  // Hash the password with a cost factor of 12
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Compare passwords
+// Instance method to compare candidate password with the user's hashed password
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };

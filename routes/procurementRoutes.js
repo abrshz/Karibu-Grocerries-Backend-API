@@ -105,7 +105,11 @@ router.post(
 router.get("/", protect, async (req, res) => {
   try {
     const filter = {};
-    if (req.query.branch) filter.branch = req.query.branch;
+    if (req.user.role !== "Director") {
+      filter.branch = req.user.branch;
+    } else if (req.query.branch) {
+      filter.branch = req.query.branch;
+    }
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -167,6 +171,9 @@ router.get("/:id", protect, async (req, res) => {
         .status(404)
         .json({ success: false, message: "Procurement record not found" });
     }
+    if (req.user.role !== "Director" && procurement.branch !== req.user.branch) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
     res.status(200).json({ success: true, data: procurement });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -214,7 +221,7 @@ router.put(
       const procurement = await Procurement.findByIdAndUpdate(
         req.params.id,
         req.body,
-        { new: true, runValidators: true },
+        { returnDocument: "after", runValidators: true },
       );
       if (!procurement) {
         return res
@@ -258,13 +265,16 @@ router.put(
  *       404:
  *         description: Record not found
  */
-router.delete("/:id", protect, restrictTo("Manager" , "Director"), async (req, res) => {
+router.delete("/:id", protect, restrictTo("Manager", "Director"), async (req, res) => {
   try {
     const procurement = await Procurement.findByIdAndDelete(req.params.id);
     if (!procurement) {
       return res
         .status(404)
         .json({ success: false, message: "Procurement record not found" });
+    }
+    if (req.user.role !== "Director" && procurement.branch !== req.user.branch) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
     }
     res
       .status(200)
@@ -278,3 +288,6 @@ router.delete("/:id", protect, restrictTo("Manager" , "Director"), async (req, r
 });
 
 module.exports = router;
+
+
+

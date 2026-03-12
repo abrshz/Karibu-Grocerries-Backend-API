@@ -45,7 +45,7 @@ const {
 router.post(
   "/cash",
   protect,
-  restrictTo("SalesAgent"),
+  restrictTo("SalesAgent", "Manager", "Director"),
   ...cashSaleValidators,
   validate,
   async (req, res) => {
@@ -92,17 +92,19 @@ router.post(
  */
 router.get("/cash", protect, async (req, res) => {
   try {
+    const filter = {};
+    if (req.user.role !== "Director") filter.branch = req.user.branch;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
     const [sales, total] = await Promise.all([
-      CashSale.find()
+      CashSale.find(filter)
         .populate("recordedBy", "username role")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      CashSale.countDocuments(),
+      CashSale.countDocuments(filter),
     ]);
 
     res.status(200).json({
@@ -189,13 +191,13 @@ router.get("/cash/:id", protect, async (req, res) => {
 router.put(
   "/cash/:id",
   protect,
-  restrictTo("SalesAgent"),
+  restrictTo("SalesAgent", "Manager", "Director"),
   ...cashSaleValidators,
   validate,
   async (req, res) => {
     try {
       const sale = await CashSale.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
       });
       if (!sale)
@@ -283,7 +285,7 @@ router.delete(
 router.post(
   "/credit",
   protect,
-  restrictTo("SalesAgent"),
+  restrictTo("SalesAgent", "Manager", "Director"),
   ...creditSaleValidators,
   validate,
   async (req, res) => {
@@ -336,6 +338,7 @@ router.post(
 router.get("/credit", protect, async (req, res) => {
   try {
     const filter = {};
+    if (req.user.role !== "Director") filter.branch = req.user.branch;
     if (req.query.isPaid !== undefined)
       filter.isPaid = req.query.isPaid === "true";
 
@@ -436,13 +439,13 @@ router.get("/credit/:id", protect, async (req, res) => {
 router.put(
   "/credit/:id",
   protect,
-  restrictTo("SalesAgent"),
+  restrictTo("SalesAgent", "Manager", "Director"),
   ...creditSaleValidators,
   validate,
   async (req, res) => {
     try {
       const sale = await CreditSale.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
       });
       if (!sale)
@@ -491,7 +494,7 @@ router.patch(
       const sale = await CreditSale.findByIdAndUpdate(
         req.params.id,
         { isPaid: true },
-        { new: true },
+        { returnDocument: "after" },
       );
       if (!sale)
         return res
@@ -551,3 +554,10 @@ router.delete(
 );
 
 module.exports = router;
+
+
+
+
+
+
+

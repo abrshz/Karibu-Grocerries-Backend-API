@@ -187,7 +187,7 @@ router.post(
  *       403:
  *         description: Not authorized
  */
-router.get("/", protect, restrictTo("Manager"), async (req, res) => {
+router.get("/", protect, restrictTo("Manager", "Director"), async (req, res) => {
   try {
     const users = await User.find().select("-password");
     res.status(200).json({
@@ -225,7 +225,7 @@ router.get("/", protect, restrictTo("Manager"), async (req, res) => {
  *       404:
  *         description: User not found
  */
-router.get("/:id", protect, restrictTo("Manager"), async (req, res) => {
+router.get("/:id", protect, restrictTo("Manager", "Director"), async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) {
@@ -274,16 +274,16 @@ router.get("/:id", protect, restrictTo("Manager"), async (req, res) => {
  *       404:
  *         description: User not found
  */
-router.patch("/:id", protect, restrictTo("Manager"), async (req, res) => {
+router.patch("/:id", protect, restrictTo("Manager", "Director"), async (req, res) => {
   try {
-    const allowedUpdates = ["role", "isActive"];
+    const allowedUpdates = ["role", "isActive", "branch"];
     const updates = {};
     allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
     });
 
     const user = await User.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     }).select("-password");
 
@@ -327,7 +327,7 @@ router.patch("/:id", protect, restrictTo("Manager"), async (req, res) => {
  *       404:
  *         description: User not found
  */
-router.delete("/:id", protect, restrictTo("Manager"), async (req, res) => {
+router.delete("/:id", protect, restrictTo("Manager", "Director"), async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) {
@@ -344,3 +344,7 @@ router.delete("/:id", protect, restrictTo("Manager"), async (req, res) => {
 });
 
 module.exports = router;
+
+
+
+
